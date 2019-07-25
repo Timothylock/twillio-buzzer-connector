@@ -44,7 +44,7 @@ def voice():
     return str(resp)
 
 
-@app.route("/buzzer/state", methods=['POST'])
+@app.route("/buzzer/state/", methods=['POST'])
 def change_state():
     """Tells the buzzer to unlock the door for the next 30 minutes"""
     content = request.json
@@ -56,21 +56,21 @@ def change_state():
         c.execute('''INSERT INTO events(validuntil) VALUES(?)''', (expire.timestamp(),))
         db.commit()
 
-        return str("Success. Will buzz everybody in until " + expire.strftime("%m/%d/%Y, %H:%M:%S"))
+        return "OK", 200
     else:
         db = sqlite3.connect('storage.db')
         c = db.cursor()
         c.execute("DELETE FROM events")
         db.commit()
 
-        return str("The system will deny all buzzes.")
+        return "OK", 200
 
 
 
 @app.route("/buzzer/state/", methods=['GET'])
 def status():
     """Fetches whether the system will buzz people in"""
-    return json.dumps({"is_active": allowed_to_buzz()})
+    return json.dumps({"is_active": str(allowed_to_buzz()).lower()}), 200
 
 
 def allowed_to_buzz():
