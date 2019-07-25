@@ -3,6 +3,7 @@ from twilio.twiml.voice_response import VoiceResponse
 import sqlite3
 import datetime
 import os
+import json
 
 app = Flask(__name__)
 
@@ -14,7 +15,7 @@ c.execute("CREATE TABLE IF NOT EXISTS events(validuntil INTEGER)")
 # Fetch env vars
 whitelisted_numbers = os.environ['WHITELISTED_NUMBERS'].split(",")          # Numbers allowed to dial into the system
 buzzcode = os.environ['BUZZCODE']                                           # Digits to dial to let them in
-minutes = int(os.environ['minutes'])                                        # Number of minutes to unlock the system
+minutes = int(os.environ['MINUTES'])                                        # Number of minutes to unlock the system
 
 
 # Buzzer
@@ -37,29 +38,39 @@ def voice():
 
     # Otherwise, unlock the door
     resp.say("unlocking door. Please wait.")
-    resp.play(digits='6666')
+    resp.play(digits=buzzcode)
     resp.say("code injected. If you still hear this, please contact whoever you are trying to reach manually. Goodbye")
 
     return str(resp)
 
 
-@app.route("/buzzer/status/allow", methods=['GET'])
-def status_allow():
+@app.route("/buzzer/state", methods=['POST'])
+def change_state():
     """Tells the buzzer to unlock the door for the next 30 minutes"""
-    expire = datetime.datetime.now() + datetime.timedelta(minutes=30)
+    content = request.json
+    if content["allow"] == "true":
+        expire = datetime.datetime.now() + datetime.timedelta(minutes=minutes)
 
-    db = sqlite3.connect('storage.db')
-    c = db.cursor()
-    c.execute('''INSERT INTO events(validuntil) VALUES(?)''', (expire.timestamp(),))
-    db.commit()
+        db = sqlite3.connect('storage.db')
+        c = db.cursor()
+        c.execute('''INSERT INTO events(validuntil) VALUES(?)''', (expire.timestamp(),))
+        db.commit()
 
-    return str("Success. Will buzz everybody in until " + expire.strftime("%m/%d/%Y, %H:%M:%S"))
+        return str("Success. Will buzz everybody in until " + expire.strftime("%m/%d/%Y, %H:%M:%S"))
+    else:
+        db = sqlite3.connect('storage.db')
+        c = db.cursor()
+        c.execute("DELETE FROM events")
+        db.commit()
+
+        return str("The system will deny all buzzes.")
 
 
-@app.route("/buzzer/status/", methods=['GET'])
+
+@app.route("/buzzer/state/", methods=['GET'])
 def status():
     """Fetches whether the system will buzz people in"""
-    return str(allowed_to_buzz())
+    return json.dumps({"is_active": allowed_to_buzz()})
 
 
 def allowed_to_buzz():
