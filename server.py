@@ -1,16 +1,11 @@
 from flask import Flask, request
 from twilio.twiml.voice_response import VoiceResponse
-import sqlite3
 import datetime
 import os
 import json
 
 app = Flask(__name__)
-
-# Initiate Database
-db = sqlite3.connect('storage.db')
-c = db.cursor()
-c.execute("CREATE TABLE IF NOT EXISTS events(validuntil INTEGER)")
+allowUntil = datetime.datetime.now()
 
 # Fetch env vars
 whitelisted_numbers = os.environ['WHITELISTED_NUMBERS'].split(",")          # Numbers allowed to dial into the system
@@ -44,30 +39,25 @@ def voice():
     return str(resp)
 
 
-@app.route("/buzzer/state/", methods=['POST'])
+@app.route("/buzzer/state", methods=['POST'])
 def change_state():
     """Tells the buzzer to unlock the door for the next 30 minutes"""
-    content = request.json
-    if content["allow"] == "true":
-        expire = datetime.datetime.now() + datetime.timedelta(minutes=minutes)
+    global allowUntil
+    c = request.json
 
-        db = sqlite3.connect('storage.db')
-        c = db.cursor()
-        c.execute('''INSERT INTO events(validuntil) VALUES(?)''', (expire.timestamp(),))
-        db.commit()
+    if "active" not in c:
+        return "missing \"active\" field", 400
 
-        return "OK", 200
-    else:
-        db = sqlite3.connect('storage.db')
-        c = db.cursor()
-        c.execute("DELETE FROM events")
-        db.commit()
+    if c["active"] == "true":
+        allowUntil = datetime.datetime.now() + datetime.timedelta(minutes=minutes)
 
-        return "OK", 200
+    if c["active"] == "false":
+        allowUntil = datetime.datetime.now()
+
+    return "OK", 200
 
 
-
-@app.route("/buzzer/state/", methods=['GET'])
+@app.route("/buzzer/state", methods=['GET'])
 def status():
     """Fetches whether the system will buzz people in"""
     return json.dumps({"is_active": str(allowed_to_buzz()).lower()}), 200
@@ -75,14 +65,8 @@ def status():
 
 def allowed_to_buzz():
     """Fetches whether the system is allowed to buzz somebody in"""
-    now = datetime.datetime.now()
-
-    db = sqlite3.connect('storage.db')
-    c = db.cursor()
-    c.execute('''SELECT COUNT(validuntil) FROM events WHERE validuntil > ?''', (now.timestamp(),))
-    db.commit()
-
-    return c.fetchone()[0] >= 1
+    global allowUntil
+    return allowUntil > datetime.datetime.now()
 
 
 if __name__ == "__main__":
