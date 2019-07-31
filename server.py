@@ -75,17 +75,20 @@ def allowed_to_buzz():
 
 
 def send_message(message):
-    conn = http.client.HTTPConnection("127.0.0.1:9090")
+    try:
+        conn = http.client.HTTPConnection("10.88.111.31:9090")
 
-    payload = "{\"room\": \"#general\", \"message\": \"" + message + "\"}"
+        payload = "{\"room\": \"#general\", \"message\": \"" + message + "\"}"
 
-    headers = {
-        'content-type': "application/json",
-    }
+        headers = {
+            'content-type': "application/json",
+        }
 
-    conn.request("POST", "/incoming/something", payload, headers)
+        conn.request("POST", "/incoming/something", payload, headers)
 
-    conn.getresponse()
+        conn.getresponse()
+    except:
+        print("error sending message")
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8080)
