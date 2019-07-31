@@ -3,6 +3,7 @@ from twilio.twiml.voice_response import VoiceResponse
 import datetime
 import os
 import json
+import http.client
 
 app = Flask(__name__)
 allowUntil = datetime.datetime.now()
@@ -25,16 +26,20 @@ def voice():
     # Does not incur any cost on twillio but is a shitty user experience
     if incoming_number not in whitelisted_numbers:
         resp.reject("not allowed to buzz")
+        return str(resp)
 
     # Tell the user a nice message that they are not permitted to enter
     if not allowed_to_buzz():
         resp.say("The system cannot let you in. Please tell the host to click allow on their phone")
+        send_message("A visitor was just rejected as the buzzer system was not unlocked")
         return str(resp)
 
     # Otherwise, unlock the door
     resp.say("unlocking door. Please wait.")
     resp.play(digits=buzzcode)
     resp.say("code injected. If you still hear this, please contact whoever you are trying to reach manually. Goodbye")
+    send_message("A visitor was just let in")
+
 
     return str(resp)
 
@@ -68,6 +73,19 @@ def allowed_to_buzz():
     global allowUntil
     return allowUntil > datetime.datetime.now()
 
+
+def send_message(message):
+    conn = http.client.HTTPConnection("127.0.0.1:9090")
+
+    payload = "{\"room\": \"#general\", \"message\": \"" + message + "\"}"
+
+    headers = {
+        'content-type': "application/json",
+    }
+
+    conn.request("POST", "/incoming/something", payload, headers)
+
+    conn.getresponse()
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8080)
