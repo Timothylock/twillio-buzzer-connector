@@ -12,6 +12,7 @@ allowUntil = datetime.datetime.now()
 whitelisted_numbers = os.environ['WHITELISTED_NUMBERS'].split(",")          # Numbers allowed to dial into the system
 buzzcode = os.environ['BUZZCODE']                                           # Digits to dial to let them in
 minutes = int(os.environ['MINUTES'])                                        # Number of minutes to unlock the system
+slack_path = os.environ['SLACK_PATH']                                       # Number of minutes to unlock the system
 
 
 # Buzzer
@@ -76,15 +77,15 @@ def allowed_to_buzz():
 
 def send_message(message):
     try:
-        conn = http.client.HTTPConnection("10.88.111.31:9090")
+        conn = http.client.HTTPSConnection("hooks.slack.com")
 
-        payload = "{\"room\": \"#general\", \"message\": \"" + message + "\"}"
+        payload = "{\"text\": \"" + message + "\"}"
 
         headers = {
             'content-type': "application/json",
         }
 
-        conn.request("POST", "/incoming/something", payload, headers)
+        conn.request("POST", slack_path, payload, headers)
 
         conn.getresponse()
     except:
