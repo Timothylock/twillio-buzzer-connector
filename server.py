@@ -9,10 +9,11 @@ app = Flask(__name__)
 allowUntil = datetime.datetime.now()
 
 # Fetch env vars
-whitelisted_numbers = os.environ['WHITELISTED_NUMBERS'].split(",")          # Numbers allowed to dial into the system
-buzzcode = os.environ['BUZZCODE']                                           # Digits to dial to let them in
-minutes = int(os.environ['MINUTES'])                                        # Number of minutes to unlock the system
-slack_path = os.environ['SLACK_PATH']                                       # Number of minutes to unlock the system
+whitelisted_numbers = os.environ['WHITELISTED_NUMBERS'].split(",")  # Numbers allowed to dial into the system
+forward_number = os.environ['FORWARD_NUMBER']                       # Number that will be forwarded to if not whitelisted
+buzzcode = os.environ['BUZZCODE']                                   # Digits to dial to let them in
+minutes = int(os.environ['MINUTES'])                                # Number of minutes to unlock the system
+slack_path = os.environ['SLACK_PATH']                               # Number of minutes to unlock the system
 
 
 # Buzzer
@@ -26,7 +27,7 @@ def voice():
     # Reject call if the originating number is not from the intercom system
     # Does not incur any cost on twillio but is a shitty user experience
     if incoming_number not in whitelisted_numbers:
-        resp.reject("not allowed to buzz")
+        resp.dial(forward_number)
         return str(resp)
 
     # Tell the user a nice message that they are not permitted to enter
@@ -40,7 +41,6 @@ def voice():
     resp.play(digits=buzzcode)
     resp.say("code injected. If you still hear this, please contact whoever you are trying to reach manually. Goodbye")
     send_message("A visitor was just let in")
-
 
     return str(resp)
 
@@ -90,6 +90,7 @@ def send_message(message):
         conn.getresponse()
     except:
         print("error sending message")
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8080)
