@@ -10,9 +10,10 @@ allowUntil = datetime.datetime.now()
 
 # Fetch env vars
 whitelisted_numbers = os.environ['WHITELISTED_NUMBERS'].split(",")  # Numbers allowed to dial into the system
+forward_number = os.environ['FORWARD_NUMBER']                       # Number that will be forwarded to if not whitelisted
 buzzcode = os.environ['BUZZCODE']                                   # Digits to dial to let them in
 minutes = int(os.environ['MINUTES'])                                # Number of minutes to unlock the system
-slack_path = os.environ['SLACK_PATH']                               # Number of minutes to unlock the system
+slack_path = os.environ['SLACK_PATH']                               # Slack path for slack message
 
 
 # Buzzer
@@ -23,15 +24,16 @@ def voice():
     resp = VoiceResponse()
     incoming_number = request.values['From']
 
-    # Reject call if the originating number is not from the intercom system
-    # Does not incur any cost on twillio but is a shitty user experience
+    # If an unknown number, filter out robo callers and forward to cell
     if incoming_number not in whitelisted_numbers:
-        resp.reject()
+        with resp.gather(numDigits=1, action='/buzzer/forward') as gather:
+            gather.say('Press 1 to continue')
+
         return str(resp)
 
     # Tell the user a nice message that they are not permitted to enter
     if not allowed_to_buzz():
-        resp.say("The system cannot let you in. Please tell the host to click allow on their phone")
+        resp.say("The system cannot let you in. Please tell the user to click allow on their phone")
         send_message("A visitor was just rejected as the buzzer system was not unlocked")
         return str(resp)
 
@@ -42,6 +44,11 @@ def voice():
     send_message("A visitor was just let in")
 
     return str(resp)
+
+@app.route("/buzzer/forward", methods=['GET', 'POST'])
+def forward():
+    resp = VoiceResponse()
+    resp.dial(forward_number)
 
 
 @app.route("/buzzer/state", methods=['POST'])
