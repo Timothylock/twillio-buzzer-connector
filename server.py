@@ -11,6 +11,7 @@ allowUntil = datetime.datetime.now()
 # Fetch env vars
 whitelisted_numbers = os.environ['WHITELISTED_NUMBERS'].split(",")  # Numbers allowed to dial into the system
 forward_number = os.environ['FORWARD_NUMBER']                       # Number that will be forwarded to if not whitelisted
+forward_number_from = os.environ['FORWARD_NUMBER_FROM']             # Number that will be forwarded to if not whitelisted
 buzzcode = os.environ['BUZZCODE']                                   # Digits to dial to let them in
 minutes = int(os.environ['MINUTES'])                                # Number of minutes to unlock the system
 slack_path = os.environ['SLACK_PATH']                               # Slack path for slack message
@@ -53,7 +54,7 @@ def forward():
     send_message("About to forward a call from " + str(incoming_number))
 
     resp.say("Please note your call may be recorded for the benefit of both parties")
-    resp.dial(forward_number)
+    resp.dial(forward_number, caller_id=forward_number_from)
     return str(resp)
 
 
