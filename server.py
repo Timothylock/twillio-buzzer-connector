@@ -1,5 +1,5 @@
 from flask import Flask, request
-from twilio.twiml.voice_response import VoiceResponse
+from twilio.twiml.voice_response import VoiceResponse, Gather
 import datetime
 import os
 import json
@@ -26,8 +26,9 @@ def voice():
 
     # If an unknown number, filter out robo callers and forward to cell
     if incoming_number not in whitelisted_numbers:
-        with resp.gather(numDigits=1, action='/buzzer/forward') as gather:
-            gather.say('Press 1 to continue')
+        gather = Gather(num_digits=1, action='/buzzer/forward')
+        gather.say('Press 1 to continue')
+        resp.append(gather)
 
         return str(resp)
 
@@ -49,6 +50,7 @@ def voice():
 def forward():
     resp = VoiceResponse()
     resp.dial(forward_number)
+    return str(resp)
 
 
 @app.route("/buzzer/state", methods=['POST'])
