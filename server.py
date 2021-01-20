@@ -49,6 +49,10 @@ def voice():
 @app.route("/buzzer/forward", methods=['GET', 'POST'])
 def forward():
     resp = VoiceResponse()
+    incoming_number = request.values['From']
+    send_message("About to forward a call from " + str(incoming_number))
+
+    resp.say("Please note your call may be recorded for the benefit of both parties")
     resp.dial(forward_number)
     return str(resp)
 
