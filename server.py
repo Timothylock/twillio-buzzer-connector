@@ -15,6 +15,7 @@ forward_number_from = os.environ['FORWARD_NUMBER_FROM']             # Number tha
 buzzcode = os.environ['BUZZCODE']                                   # Digits to dial to let them in
 minutes = int(os.environ['MINUTES'])                                # Number of minutes to unlock the system
 slack_path = os.environ['SLACK_PATH']                               # Slack path for slack message
+say_message = os.environ['SAY_MESSAGE']                             # The message to be said to the dialer
 
 
 # Buzzer
@@ -35,14 +36,13 @@ def voice():
 
     # Tell the user a nice message that they are not permitted to enter
     if not allowed_to_buzz():
-        resp.say("The system cannot let you in. Please tell the user to click allow on their phone")
+        resp.say("The system cannot let you in. Did you dial the right buzzcode?")
         send_message("A visitor was just rejected as the buzzer system was not unlocked")
         return str(resp)
 
     # Otherwise, unlock the door
-    resp.say("unlocking door. Please wait.")
+    resp.say(say_message)
     resp.play(digits=buzzcode)
-    resp.say("code injected. If you still hear this, please contact whoever you are trying to reach manually. Goodbye")
     send_message("A visitor was just let in")
 
     return str(resp)
