@@ -41,7 +41,7 @@ def voice():
         return str(resp)
 
     # Otherwise, unlock the door
-    resp.say(say_message)
+    resp.say(say_message, language='zh-CN')
     resp.play(digits=buzzcode)
     send_message("A visitor was just let in")
 
