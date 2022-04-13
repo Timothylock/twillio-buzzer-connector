@@ -16,6 +16,7 @@ buzzcode = os.environ['BUZZCODE']                                   # Digits to 
 minutes = int(os.environ['MINUTES'])                                # Number of minutes to unlock the system
 slack_path = os.environ['SLACK_PATH']                               # Slack path for slack message
 say_message = os.environ['SAY_MESSAGE']                             # The message to be said to the dialer
+say_language = os.environ['TTS_LANG']                               # The language for the TTS
 
 
 # Buzzer
@@ -41,7 +42,7 @@ def voice():
         return str(resp)
 
     # Otherwise, unlock the door
-    resp.say(say_message, language='zh-CN')
+    resp.say(say_message, language=say_language)
     resp.play(digits=buzzcode)
     send_message("A visitor was just let in")
 
